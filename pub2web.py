@@ -79,7 +79,7 @@ class registerRegions(sublime_plugin.EventListener):
 
     def on_pre_save(self, view):
         print('Searching for logs in file: ' + view.file_name())
-        if view.window().extract_variables()['file_extension'] == 'html':
+        if view.window().extract_variables()['file_extension'] in ['html','pub', 'dict']:
 	        view.run_command('find_logs')
         	pass
         else:
