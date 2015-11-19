@@ -47,35 +47,24 @@ class GetWordsCommand(BaseCommand):
 class FindLogs(BaseCommand):
 	def run(self, edit):
 		view = self.view
-		lineRegions = []
-		# regex = r'^\s*(util\.logweb\((.*)\);)'
-		regex = r'(util\.logweb\((.*)\);)'
-		logRegions = view.find_all(regex)
-		print("Log Regions:", logRegions)
-		for region in logRegions:
-			print("Region detected: ", view.substr(region))
+		pattern = r'(util\.logweb\((.*)\);)'
+		# These regions must be reversed so offsets dont get distorted.
+		for region in reversed(list(view.find_all(pattern))):
 			regString = view.substr(region)
 			if "uuid" not in regString:
-				print("Region does not have uid: ", regString)
-				matchObj = re.match(regex, regString)
-				if matchObj:
-					loggedVar = matchObj.group(2)
-					stringWithId = "util.logweb(" + loggedVar + "," + "{uuid: '" + id_generator() + "'});"
-					print("Replacing with: " + stringWithId)
-					view.replace(edit,region,stringWithId)
-		view.erase_regions("logRegions")
-		# view.add_regions("logRegions",logRegions, "comment")
+				matchString =  re.sub(pattern, r'util.logweb(\g<2>, {uuid:"' + id_generator() +'"});', regString)
+				print("MATCH STRING: ", matchString)
+				if matchString != regString:
+					view.replace(edit,region,matchString)
 
 class AnnotateLog(BaseCommand):
 	def run(self, edit, **args):
 		view = self.view
 		logVal = args["value"]
 		logId = args["uuid"]
-		print("Annotating log ", logId, "with ", logVal)
-		lineRegions = []
-		regex = r'^\s*(util\.logweb\((.*)\);)'
-		logRegions = view.find_all(regex)
-		for region in logRegions:
+		pattern = r'(util\.logweb\((.*)\);)'
+		logRegions = view.find_all(pattern)
+		for region in reversed(list(view.find_all(pattern))):
 			regString = view.substr(region)
 			if logId in regString:
 				print("Found ID to annotate: ", regString)
@@ -109,7 +98,7 @@ class SocketServerThread(threading.Thread):
     def run(self):
         try:
             print("threading has begun")
-            self.io = SocketIO('http://localhost', 3000, verify=False)
+            self.io = SocketIO('http://10.224.59.158', 3000, verify=False)
             print("Created new SocketServer")
             self.io.on('connected', self.handleClientMessage)
             self.io.on('reply', self.on_server_response)
